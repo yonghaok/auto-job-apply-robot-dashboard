@@ -1,8 +1,8 @@
 # resume-bot · 一键自动填简历机器人
 
-> GitHub 仓库：<https://github.com/yonghaok/--->
-> 仓库名与内部代号 `resume-bot` 不同名，属正常；下文所有路径均指仓库根目录。
-> 克隆时建议显式指定目录名：`git clone https://github.com/yonghaok/---.git resume-bot`
+> GitHub 仓库：<https://github.com/yonghaok/auto-job-apply-robot-dashboard>
+> 项目内部代号 `resume-bot`（模块名、目录名沿用），与仓库名不同名，属正常。
+> 下文所有路径均指仓库根目录。
 
 把求职网站的申请表单**自动填到「提交前」**，由你核对后自己点提交。
 
@@ -83,11 +83,11 @@ resume-bot/
 ### 3.1 获取代码
 
 ```bash
-git clone https://github.com/yonghaok/---.git resume-bot
-cd resume-bot
+git clone https://github.com/yonghaok/auto-job-apply-robot-dashboard.git
+cd auto-job-apply-robot-dashboard
 ```
 
-也可以直接在仓库页面点 `Code → Download ZIP`（不装 git 也能用），解压后目录名建议改为 `resume-bot`。
+也可以直接在仓库页面点 `Code → Download ZIP`（不装 git 也能用），解压后进同名目录即可。
 
 ### 3.2 环境要求
 
