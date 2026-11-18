@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- NotificationListenerService 元数据（部分 OEM ROM 会读取；官方 Android 可忽略）。 -->
+<notification-listener xmlns:android="http://schemas.android.com/apk/res/android" />

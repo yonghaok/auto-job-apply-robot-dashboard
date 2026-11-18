@@ -1,0 +1,1110 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>一键自动填简历机器人 · 看板</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background: #f7f8fa; color: #1f2937; }
+  header { padding: 12px 18px; background: #fff; border-bottom: 1px solid #e5e7eb;
+           display: flex; align-items: center; gap: 14px; flex-wrap: wrap; position: sticky; top: 0; z-index: 20; }
+  header h1 { font-size: 16px; margin: 0; font-weight: 600; }
+  .stats { display: flex; gap: 8px; font-size: 12px; flex-wrap: wrap; }
+  .stats span { background: #eef2ff; color: #3730a3; padding: 3px 9px; border-radius: 999px; }
+  .stats span.ok { background: #ecfdf5; color: #065f46; }
+  .stats span.no { background: #fef2f2; color: #991b1b; }
+  .stats span.warn { background: #fef3c7; color: #92400e; }
+  button { cursor: pointer; border: 1px solid #c7d2fe; background: #eef2ff; color: #3730a3;
+           padding: 5px 11px; border-radius: 8px; font-size: 13px; }
+  button:hover { background: #e0e7ff; }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  button.primary { border-color: #a5b4fc; background: #c7d2fe; font-weight: 600; }
+  button.go { border-color: #6ee7b7; background: #059669; color: #fff; font-weight: 600; }
+  button.go:hover { background: #047857; }
+  button.no { border-color: #fca5a5; background: #fef2f2; color: #991b1b; }
+  .layout { display: flex; gap: 14px; padding: 14px 18px; align-items: flex-start; }
+  .col-pre { flex: 1; min-width: 0; }
+  .col-side { width: 420px; flex: none; }
+  .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 12px; margin-bottom: 14px; }
+  .card-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+  .card-head h2 { font-size: 14px; margin: 0; }
+  .card-head .grow { flex: 1; }
+  .card-head .right { display: flex; gap: 8px; align-items: center; }
+  .seg { display: inline-flex; border: 1px solid #c7d2fe; border-radius: 8px; overflow: hidden; }
+  .seg button { border: 0; border-radius: 0; background: #fff; padding: 5px 10px; }
+  .seg button.on { background: #c7d2fe; font-weight: 600; }
+  .hint { font-size: 12px; color: #6b7280; line-height: 1.6; }
+  .empty { color: #9ca3af; font-size: 13px; padding: 16px; text-align: center; }
+  .job { border: 1px solid #e5e7eb; border-radius: 10px; margin-bottom: 10px; overflow: hidden; }
+  .job-head { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: #f8fafc; }
+  .job-head .co { font-weight: 600; font-size: 13px; }
+  .job-head .meta { font-size: 12px; color: #6b7280; }
+  .job-head .grow { flex: 1; }
+  /* 状态固定在每栏最右侧 */
+  .job-head .st { flex: none; }
+  .tabs { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 10px 4px; }
+  .tb { display: inline-flex; align-items: center; gap: 6px; border: 1px solid #e5e7eb; background: #fff;
+        border-radius: 999px; padding: 3px 6px 3px 10px; font-size: 12px; cursor: pointer; max-width: 100%; }
+  .tb:hover { background: #f3f4f6; }
+  .tb.on { border-color: #6366f1; background: #eef2ff; }
+  .tb .t { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+  .tb .c { color: #6b7280; }
+  .tb .x { border: 0; background: transparent; color: #9ca3af; padding: 0 4px; font-size: 13px; line-height: 1; }
+  .tb .x:hover { color: #991b1b; background: transparent; }
+  .pane { padding: 8px 10px 10px; border-top: 1px dashed #e5e7eb; font-size: 12px; }
+  .pane .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 4px 0; }
+  .pane .k { color: #6b7280; }
+  .pane .acts { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; flex: none; }
+  .tag.pending { background: #f1f1f4; color: #4b5563; }
+  .tag.投递中 { background: #e0e7ff; color: #3730a3; }
+  .tag.需人工验证 { background: #fef3c7; color: #92400e; }
+  .tag.投递失败 { background: #fee2e2; color: #991b1b; }
+  .tag.已登录 { background: #d1fae5; color: #065f46; }
+  .tag.已投递 { background: #a7f3d0; color: #064e3b; font-weight: 600; }
+  .tag.待人工提交 { background: #ede9fe; color: #5b21b6; font-weight: 600; }
+  .pause-tog { display: inline-flex; align-items: center; gap: 5px; font-size: 12px;
+               color: #4b5563; cursor: pointer; user-select: none; padding: 0 4px; }
+  .pause-tog input { width: 14px; height: 14px; accent-color: #7c3aed; }
+  .hv { background: #fffbeb; border: 1px solid #fcd34d; color: #92400e; font-size: 12px;
+        padding: 8px 10px; border-radius: 8px; margin-top: 6px; line-height: 1.7; }
+  .hv b { color: #b45309; }
+  .prog { font-size: 12px; color: #4b5563; background: #f8fafc; border: 1px solid #e5e7eb;
+          padding: 6px 10px; border-radius: 8px; margin-top: 6px; line-height: 1.6; word-break: break-all; }
+  .jlog { font-size: 12px; background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 8px;
+          padding: 8px 10px; margin-bottom: 8px; line-height: 1.7; max-height: 150px; overflow: auto; }
+  .bar { height: 6px; background: #e5e7eb; border-radius: 999px; overflow: hidden; margin: 6px 0; }
+  .bar i { display: block; height: 100%; background: #6366f1; }
+  /* 短信监控：窗口拉大 */
+  .sms-box { max-height: 620px; overflow: auto; }
+  .sms-row { font-size: 13px; border-bottom: 1px solid #f1f1f4; padding: 9px 0; line-height: 1.65; }
+  .sms-row b { color: #0c447c; }
+  .sms-row .code { font-family: ui-monospace, Consolas, monospace; font-size: 17px; font-weight: 700; color: #b45309; }
+  .pane a { color: #185fa5; word-break: break-all; }
+  /* 个人信息填写窗口（模态） */
+  .modal-mask { position: fixed; inset: 0; background: rgba(15,23,42,.45); display: none;
+                align-items: flex-start; justify-content: center; z-index: 50;
+                padding: 28px 12px; overflow: auto; }
+  .modal-mask.on { display: flex; }
+  .modal { background: #fff; border-radius: 14px; width: min(700px, 96vw); max-height: 92vh;
+           overflow: auto; padding: 16px 18px 20px; box-shadow: 0 12px 40px rgba(0,0,0,.25); }
+  .modal h2 { font-size: 15px; margin: 0; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; margin-top: 10px; }
+  .form-grid .full { grid-column: 1 / -1; }
+  .fld label { display: block; font-size: 12px; color: #6b7280; margin-bottom: 3px; }
+  .fld input, .fld textarea { width: 100%; border: 1px solid #d1d5db; border-radius: 8px;
+               padding: 7px 9px; font-size: 13px; font-family: inherit; box-sizing: border-box; }
+  .fld textarea { min-height: 88px; resize: vertical; font-family: ui-monospace, Consolas, monospace; }
+  .modal-foot { display: flex; gap: 10px; justify-content: flex-end; align-items: center;
+                margin-top: 14px; border-top: 1px solid #e5e7eb; padding-top: 12px; }
+  .modal-foot .msg { margin-right: auto; color: #059669; font-size: 12px; }
+  /* 页内确认框 / 轻提示：破坏性操作不再依赖浏览器原生 confirm */
+  .modal.sm { width: min(460px, 94vw); }
+  .ask-desc { white-space: pre-wrap; font-size: 13px; color: #374151;
+              line-height: 1.75; margin: 10px 0 2px; }
+  #ask-err { color: #991b1b; font-size: 12px; margin-top: 8px; display: none; }
+  .toast-wrap { position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%);
+                z-index: 80; display: flex; flex-direction: column; gap: 8px;
+                align-items: center; pointer-events: none; }
+  .toast { pointer-events: auto; background: #111827; color: #f9fafb; font-size: 13px;
+           padding: 9px 14px; border-radius: 10px; display: flex; gap: 10px;
+           align-items: center; box-shadow: 0 8px 24px rgba(0,0,0,.25); max-width: 86vw; }
+  .toast.err { background: #991b1b; }
+  .toast button { border: 0; background: rgba(255,255,255,.16); color: #fff;
+                  font-size: 12px; padding: 3px 9px; }
+  .toast button:hover { background: rgba(255,255,255,.28); }
+</style>
+<script src="vendor/pdf.min.js"></script>
+<script>
+  if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = "vendor/pdf.worker.min.js";
+</script>
+</head>
+<body>
+<header>
+  <h1>一键自动填简历机器人</h1>
+  <div class="stats" id="stats"></div>
+  <div class="stats" id="capstats"></div>
+  <div class="grow" style="flex:1"></div>
+  <div class="seg" id="modeseg">
+    <button data-mode="strict" onclick="setMode('strict')">严格</button>
+    <button data-mode="loose" onclick="setMode('loose')">宽松</button>
+  </div>
+  <button onclick="doScan()" id="btn-scan">扫描投递链接</button>
+  <button onclick="reloadAll()">重新加载表格</button>
+  <button onclick="openProfile()">个人信息</button>
+  <button onclick="openMatch()">匹配条件</button>
+  <button onclick="edgeCdp()" id="btn-edgecdp"
+          title="以调试模式启动你的 Edge（真实资料目录），投递时直接接管它 —— 投递页因此继承你的登录态。需先完全退出 Edge。">启动 Edge（继承登录态）</button>
+</header>
+
+<div class="layout">
+  <!-- 主栏：预选投递（一公司一栏 · 多岗位多 tab） -->
+  <div class="col-pre">
+    <div class="card">
+      <div class="card-head">
+        <h2>预选投递</h2>
+        <span class="hint" id="pre-sum"></span>
+        <div class="grow" style="flex:1"></div>
+        <div class="right">
+          <button class="no" onclick="unhideAll()" title="恢复全部被取消的岗位/公司">恢复已取消</button>
+          <button class="no" onclick="resetAll()" title="把所有岗位的投递状态清回「待投递」，便于整轮重投（不影响取消选择与扫描缓存）">复位投递状态</button>
+          <label class="pause-tog" title="开启后：单岗位投递填完表会停在提交前，浏览器窗口保持打开，等你在窗口里核对并点「提交」；关闭则自动提交">
+            <input type="checkbox" id="chk-pause" onchange="setPause(this.checked)"> 单岗位投递：填完停在提交前
+          </label>
+          <button class="no" id="btn-cancelapply" onclick="cancelApplyAll()"
+                  style="display:none" title="停止当前投递队列：不再派发新岗位；正在投递的岗位会在下一个检查点中断（等待验证码 / 填表 / 提交前），被取消的岗位回到「待投递」">取消投递</button>
+          <button class="go" id="btn-applyall" onclick="applyAll()">一键投递</button>
+        </div>
+      </div>
+      <div class="hint" id="scan-info"></div>
+      <div class="jlog" id="scan-log" style="display:none"></div>
+      <div id="pre"></div>
+      <div class="empty" id="pre-empty" style="display:none">当前筛选下没有岗位。</div>
+    </div>
+  </div>
+
+  <!-- 侧栏：短信监控（窗口拉大） -->
+  <div class="col-side">
+    <div class="card">
+      <div class="card-head"><h2>短信监控</h2><span class="hint" id="sms-sum"></span>
+        <div class="right"><button onclick="clearSms()" title="清空当前短信监控框（保留历史记录与拒收台账）">清除</button></div>
+      </div>
+      <div id="sms" class="hint sms-box">等待手机转发短信到 /sms …</div>
+    </div>
+  </div>
+</div>
+
+<!-- 个人信息填写窗口（模态） -->
+<div class="modal-mask" id="profileModal">
+  <div class="modal">
+    <div class="card-head">
+      <h2>个人信息</h2>
+      <div class="grow" style="flex:1"></div>
+      <button onclick="closeProfile()">✕ 关闭</button>
+    </div>
+    <div class="hint">修改后点下方「保存」写回 <b>profile.json</b>，后续投递会自动按此信息填表（含先上传简历附件）。</div>
+    <div class="form-grid">
+      <div class="fld"><label>姓名</label><input id="p-name"></div>
+      <div class="fld"><label>性别</label><input id="p-gender" placeholder="男 / 女"></div>
+      <div class="fld"><label>手机</label><input id="p-phone"></div>
+      <div class="fld"><label>邮箱</label><input id="p-email"></div>
+      <div class="fld"><label>出生</label><input id="p-birth"></div>
+      <div class="fld"><label>所在城市</label><input id="p-location"></div>
+      <div class="fld"><label>意向城市</label><input id="p-intended" placeholder="希望工作的城市"></div>
+      <div class="fld"><label>籍贯</label><input id="p-native"></div>
+      <div class="fld"><label>现居地址</label><input id="p-current-addr"></div>
+      <div class="fld"><label>学校地址</label><input id="p-school-addr"></div>
+      <div class="fld"><label>身份证号</label><input id="p-idcard"></div>
+      <div class="fld"><label>是否接受调剂</label><input type="checkbox" id="p-adjust" style="width:auto;height:auto;accent-color:#7c3aed"></div>
+      <div class="fld"><label>学历·学校</label><input id="p-edu-school"></div>
+      <div class="fld"><label>学历·层次</label><input id="p-edu-degree" placeholder="本科 / 硕士"></div>
+      <div class="fld"><label>学历·专业</label><input id="p-edu-major"></div>
+      <div class="fld"><label>学历·毕业年份</label><input id="p-edu-grad" placeholder="如 2027"></div>
+      <div class="fld"><label>学历·在读时间</label><input id="p-edu-period" placeholder="如 2023.9-2027.6"></div>
+      <div class="fld"><label>学历·GPA</label><input id="p-edu-gpa"></div>
+      <div class="fld full"><label>简历 PDF 路径（投递时上传用，填本地真实路径）</label><input id="p-resume" placeholder="C:/Users/&lt;you&gt;/.../resume.pdf"></div>
+      <div class="fld full">
+        <label>从简历 PDF 自动解析并回填 JSON（experiences / projects / skills / awards）</label>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <input type="file" id="p-resume-file" accept=".pdf" style="flex:1;min-width:200px">
+          <button type="button" onclick="parseResume()">解析并回填 JSON</button>
+          <span id="parse-msg" style="color:#6b7280;font-size:12px"></span>
+        </div>
+        <div class="hint">选 PDF 后浏览器本地用 PDF.js 抽文本（文件不上传），后端 LLM 结构化抽取；回填下方 4 个 JSON 框并写回 profile.json。投递上传仍以「简历 PDF 路径」为准。</div>
+      </div>
+      <div class="fld full"><label>自我评价</label><textarea id="p-self"></textarea></div>
+      <div class="fld full"><label>工作经历（JSON 数组）</label><textarea id="p-experiences" placeholder='[{"company":"","role":"","period":"","highlights":[]}]'></textarea></div>
+      <div class="fld full"><label>项目（JSON 数组）</label><textarea id="p-projects" placeholder='[{"name":"","role":"","period":"","desc":""}]'></textarea></div>
+      <div class="fld full"><label>技能（JSON 数组）</label><textarea id="p-skills" placeholder='["Figma","Python"]'></textarea></div>
+      <div class="fld full"><label>奖项（JSON 数组）</label><textarea id="p-awards" placeholder='["xxx"]'></textarea></div>
+    </div>
+    <div class="modal-foot">
+      <span class="msg" id="profile-msg"></span>
+      <button onclick="closeProfile()">取消</button>
+      <button class="primary" onclick="saveProfile()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 匹配条件编辑窗口（模态） -->
+<div class="modal-mask" id="matchModal">
+  <div class="modal">
+    <div class="card-head">
+      <h2>匹配条件</h2>
+      <div class="grow" style="flex:1"></div>
+      <button onclick="closeMatch()">✕ 关闭</button>
+    </div>
+    <div class="hint">这些<b>关键词</b>与<b>城市</b>决定看板上哪些岗位被判定为「匹配」。
+      <b>严格</b>模式要求<b>全部</b>关键词命中且城市命中其一；<b>宽松</b>模式要求<b>任一</b>关键词命中且城市命中其一。
+      每行写一个，或英文逗号分隔；保存后看板即时按新条件重筛。</div>
+    <div class="form-grid">
+      <div class="fld full"><label>关键词（每行一个 / 逗号分隔，如 产品经理、本科）</label>
+        <textarea id="m-keywords" placeholder="产品经理&#10;本科"></textarea></div>
+      <div class="fld full"><label>城市（每行一个 / 逗号分隔，至少命中其一）</label>
+        <textarea id="m-cities" placeholder="北京&#10;上海&#10;深圳"></textarea></div>
+    </div>
+    <div class="modal-foot">
+      <span class="msg" id="match-msg"></span>
+      <button onclick="closeMatch()">取消</button>
+      <button class="primary" onclick="saveMatch()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 页内确认框（替代原生 confirm：内嵌 WebView / 被拦截弹窗时也能点） -->
+<div class="modal-mask" id="askModal">
+  <div class="modal sm" onclick="event.stopPropagation()">
+    <h2 id="ask-title">确认操作</h2>
+    <div class="ask-desc" id="ask-desc"></div>
+    <div id="ask-err"></div>
+    <div class="modal-foot">
+      <button id="ask-cancel" onclick="askClose(false)">取消</button>
+      <button class="no" id="ask-ok" onclick="askSubmit()">确定</button>
+    </div>
+  </div>
+</div>
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let MODE = localStorage.getItem("resume-mode") || "strict";
+// 「单岗位投递：填完停在提交前」——默认**开**（用户 2026-09-21 选定）
+let PAUSE_SUBMIT = localStorage.getItem("resume-pause-submit") !== "0";
+function pauseSubmit() { return PAUSE_SUBMIT; }
+function setPause(on) {
+  PAUSE_SUBMIT = !!on;
+  localStorage.setItem("resume-pause-submit", on ? "1" : "0");
+}
+let SEL = {};             // {公司: 选中的 position id}
+let LAST_SIG = "";        // 渲染签名，内容没变就不重绘（避免闪烁/丢失滚动）
+let HIDDEN_N = { positions: 0, companies: 0 };   // 当前被「取消」的条数（服务端给）
+
+function esc(s) {
+  return String(s == null ? "" : s).replace(/[&<>"]/g, (m) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[m]));
+}
+function statusText(s) {
+  return ({ pending: "待投递", "投递中": "投递中", "需人工验证": "需人工验证",
+            "已登录": "已登录", "已投递": "已投递",
+            "待人工提交": "待人工提交",
+            "投递失败": "投递失败" })[s] || s || "待投递";
+}
+// 终态：流程已经走完（真投出去了=已投递；「已登录」是历史遗留状态，同样算走完）
+const DONE_ST = ["已投递", "已登录"];
+function isDone(s) { return DONE_ST.indexOf(s) >= 0; }
+
+/* ------------------------------- 模式切换 ------------------------------- */
+function setMode(m) {
+  MODE = m;
+  localStorage.setItem("resume-mode", m);
+  LAST_SIG = "";
+  loadColumns();
+}
+
+/* ------------------------------- 看板主渲染 ------------------------------- */
+async function loadColumns() {
+  let d;
+  try {
+    d = await (await fetch("/api/columns?mode=" + encodeURIComponent(MODE))).json();
+  } catch (e) { return; }
+
+  const cols = d.columns || [];
+  const tot = (d.totals || {})[MODE] || { positions: 0, companies: 0 };
+  const S = (d.totals || {}).strict || { positions: 0, companies: 0 };
+  const L = (d.totals || {}).loose || { positions: 0, companies: 0 };
+  HIDDEN_N = d.hidden || { positions: 0, companies: 0 };
+
+  // 模式按钮上的计数
+  $("modeseg").querySelectorAll("button").forEach((b) => {
+    const m = b.getAttribute("data-mode");
+    const t = (d.totals || {})[m] || { positions: 0, companies: 0 };
+    b.textContent = (m === "strict" ? "严格" : "宽松") + " " + t.positions + "岗/" + t.companies + "家";
+    b.classList.toggle("on", m === MODE);
+  });
+
+  let nReady = 0, nLogin = 0, nHuman = 0, nRunning = 0, nFail = 0, nPause = 0;
+  for (const c of cols) for (const p of c.positions) {
+    if (isDone(p.status)) nLogin++;
+    else if (p.status === "待人工提交") nPause++;
+    else if (p.status === "需人工验证") nHuman++;
+    else if (p.status === "投递中") nRunning++;
+    else if (p.status === "投递失败") nFail++;
+    else nReady++;
+  }
+  $("stats").innerHTML =
+    `<span>公司 ${cols.length}</span><span>岗位 ${tot.positions}</span>` +
+    `<span>待投递 ${nReady}</span>` +
+    `<span class="warn">投递中 ${nRunning}</span>` +
+    `<span class="ok">已投递 ${nLogin}</span>` +
+    (nPause ? `<span class="warn">待确认提交 ${nPause}</span>` : "") +
+    (nHuman ? `<span class="warn">需人工验证 ${nHuman}</span>` : "") +
+    (nFail ? `<span class="no">投递失败 ${nFail}</span>` : "");
+  const _kws = (d.keywords || []).join("/") || "—";
+  const _cts = (d.cities || []).join("/") || "—";
+  $("pre-sum").textContent =
+    `筛选=${MODE === "strict" ? "严格（关键词全部命中）" : "宽松（关键词任一命中）"}` +
+    `　关键词 ${_kws}　城市 ${_cts}` +
+    `　严格 ${S.positions}岗/${S.companies}家　宽松 ${L.positions}岗/${L.companies}家`;
+  $("pre-empty").style.display = cols.length ? "none" : "block";
+
+  // 扫描状态
+  const sj = d.scan_job || {};
+  const ss = d.scan_summary || {};
+  if (sj.running) {
+    const pct = sj.total ? Math.round(sj.done * 100 / sj.total) : 0;
+    $("scan-info").innerHTML = `正在扫描投递链接：${sj.done}/${sj.total}（列表页 ${sj.lists}，失败 ${sj.errors}）` +
+      `<div class="bar"><i style="width:${pct}%"></i></div>`;
+  } else {
+    $("scan-info").innerHTML =
+      `投递链接扫描：已缓存 ${ss.cached_urls || 0} 个链接（列表页 ${ss.list_pages || 0}，` +
+      `失败 ${ss.errors || 0}，共扫出 ${ss.scanned_positions || 0} 个岗位）`;
+  }
+  const logLines = (sj.last || []).filter(Boolean);
+  $("scan-log").style.display = logLines.length ? "block" : "none";
+  $("scan-log").innerHTML = logLines.map((l) => `· ${esc(l)}`).join("<br>");
+  $("btn-scan").disabled = !!sj.running;
+  $("btn-scan").textContent = sj.running ? "扫描中…（点此停止）" : "扫描投递链接";
+  $("btn-scan").onclick = sj.running ? stopScan : doScan;
+
+  // 一键投递状态
+  const aj = d.apply_job || {};
+  const cbtn = $("btn-cancelapply");
+  if (aj.running) {
+    $("btn-applyall").disabled = true;
+    $("btn-applyall").textContent = `投递中 ${aj.done}/${aj.total}（${aj.concurrency > 1 ? "并发 " + aj.concurrency : "单窗口"}）`;
+    if (cbtn) {
+      cbtn.style.display = "";                       // 运行中才出现「取消投递」
+      cbtn.disabled = !!aj.cancelled;
+      cbtn.textContent = aj.cancelled ? "正在取消…" : "取消投递";
+    }
+  } else {
+    $("btn-applyall").disabled = false;
+    $("btn-applyall").textContent = "一键投递";
+    if (cbtn) { cbtn.style.display = "none"; cbtn.disabled = false; cbtn.textContent = "取消投递"; }
+  }
+
+  // 内容未变则不重绘（保住选中的 tab 和滚动位置）
+  const sig = JSON.stringify({
+    m: MODE, c: cols.map((c) => [c.company, c.positions.map((p) => [p.id, p.status, (p.note || "").length, p.ready])]),
+  });
+  if (sig === LAST_SIG) return;
+  LAST_SIG = sig;
+  render(cols);
+}
+
+function render(cols) {
+  const box = $("pre");
+  box.innerHTML = "";
+  for (const c of cols) {
+    box.appendChild(renderCompany(c));
+  }
+}
+
+function renderCompany(c) {
+  const div = document.createElement("div");
+  div.className = "job";
+  div.dataset.company = c.company;   // 取消后立即摘除用
+
+  // 选中项：默认第一个（或上次选中的）
+  let selId = SEL[c.company];
+  if (!c.positions.some((p) => p.id === selId)) selId = c.positions[0].id;
+  SEL[c.company] = selId;
+  const sp = c.positions.find((p) => p.id === selId) || c.positions[0];
+
+  const done = c.positions.filter((p) => isDone(p.status)).length
+             + c.positions.filter((p) => p.status === "投递中").length
+             + c.positions.filter((p) => p.status === "需人工验证").length;
+  const meta = `${c.positions.length} 个岗位` + (done ? ` · 已投 ${done}` : "")
+             + `　严格${c.counts.strict}/宽松${c.counts.loose}`;
+
+  // 栏头：公司名 …… 状态（最右） + 取消整栏
+  const head = document.createElement("div");
+  head.className = "job-head";
+  const st = statusText(companyStatus(c.positions));
+  head.innerHTML =
+    `<span class="co">${esc(c.company)}</span>` +
+    `<span class="meta">${esc(meta)}</span>` +
+    `<span class="grow"></span>` +
+    `<span class="st tag ${esc(companyStatus(c.positions))}">${esc(st)}</span>` +
+    `<button class="no" title="不对该公司投递（整栏移除）">✕ 取消本栏</button>`;
+  head.querySelector("button").onclick = () => cancelCompany(c.company, c.positions.length);
+  div.appendChild(head);
+
+  // 岗位 tab：每个 tab 显示 岗位名称 + 地域，并各带一个取消按钮
+  const tabs = document.createElement("div");
+  tabs.className = "tabs";
+  for (const p of c.positions) {
+    const t = document.createElement("span");
+    t.className = "tb" + (p.id === selId ? " on" : "");
+    t.dataset.pid = p.id;   // 取消后立即摘除用
+    const dot = { "已投递": "✅", "已登录": "✅", "投递中": "⏳", "需人工验证": "⚠️",
+                  "待人工提交": "✋", "投递失败": "❌" }[p.status] || "";
+    t.innerHTML = `<span class="t" title="${esc(p.title)}">${dot}${esc(p.title)}</span>` +
+      `<span class="c">${esc(p.city || "地域未知")}</span>` +
+      `<button class="x" title="不投递该岗位（移除）">✕</button>`;
+    t.onclick = (e) => {
+      if (e.target.classList.contains("x")) return;
+      SEL[c.company] = p.id; LAST_SIG = ""; loadColumns();
+    };
+    t.querySelector(".x").onclick = (e) => { e.stopPropagation(); cancelPosition(p.id, p.title); };
+    tabs.appendChild(t);
+  }
+  div.appendChild(tabs);
+
+  // 当前 tab 的详情
+  div.appendChild(renderPane(c, sp));
+  return div;
+}
+
+function renderPane(c, p) {
+  const pane = document.createElement("div");
+  pane.className = "pane";
+  const link = p.entry_url || p.src_page || p.url || "";
+  let html =
+    `<div class="row"><span class="k">岗位</span><b>${esc(p.title)}</b>` +
+    `<span class="tag ${esc(p.status || "pending")}">${esc(statusText(p.status))}</span></div>` +
+    `<div class="row"><span class="k">地域</span>${esc(p.city || "未知")}` +
+    (p.degree ? `　<span class="k">学历</span>${esc(p.degree)}` : "") +
+    `　<span class="k">来源</span>${esc(p.origin || "表格")}` +
+    (p.kw_in_other && p.kw_in_other.length
+      ? `　<span class="k">卡面命中</span>${esc(p.kw_in_other.join("/"))}` : "") +
+    (p.placeholder ? `　<span class="k" style="color:#92400e">岗位名未采集</span>` : "") +
+    `</div>`;
+  if (link) {
+    html += `<div class="row"><span class="k">链接</span>` +
+            `<a href="${esc(link)}" target="_blank">${esc(link)}</a></div>`;
+  }
+  const note = (p.note || "").split("；").map((s) => s.trim()).filter(Boolean).pop() || "";
+  if (p.status === "投递中" || isDone(p.status) || p.status === "投递失败"
+      || p.status === "待人工提交") {
+    html += `<div class="prog">${esc(note || "—")}</div>`;
+  }
+  if (p.status === "待人工提交") {
+    // 注意：进这个状态的 stage 不止「已填表待确认」，还有「填表未命中 / 未找到投递表单」
+    // （那些情况下表单**没填上**）。所以这里不能再写「投递信息已自动填好」——那是假话。
+    // 具体卡在哪一步看上面那行日志（note）。
+    html += `<div class="hv">✋ <b>已进入人工提交阶段</b>：浏览器窗口仍开着 —— 请在窗口里核对/补齐信息后点「提交」。<br>你点了提交我会自动记录为「已投递」；关掉窗口则如实记「待人工提交」。</div>`;
+    // 此处窗口**一直开着**，是「进入窗口」最可靠的场景
+    html += `<div class="acts">` +
+      `<button class="primary" data-act="focus">进入窗口（置前）</button>` +
+      `<button data-act="human-done">确认已投递</button>` +
+      `</div>`;
+  }
+  if (p.status === "需人工验证") {
+    const isSms = /转发|短信|验证码未|未收到/.test(note) && !/人机/.test(note);
+    html += `<div class="hv">⚠️ <b>需要人工介入</b>：${esc(note || "请在浏览器窗口中完成人机验证")}<br>` +
+      (isSms
+        ? `验证码未到达后端：请确认手机端「短信转发」APP 在线，或直接在浏览器窗口手动输入验证码后点击「登录」。`
+        : `自动过验证未成功：请在已打开的浏览器窗口手动完成验证（滑块 / 图形验证码），完成后会自动继续。`) +
+      `</div>`;
+    html += `<div class="acts">` +
+      `<button class="primary" data-act="focus">进入窗口（置前）</button>` +
+      `<button data-act="human-done">确认已投递</button>` +
+      `</div>`;
+  }
+  if (p.scan_error) html += `<div class="prog" style="color:#991b1b">${esc(p.scan_error)}</div>`;
+  html += `<div class="acts">`;
+  if (p.ready) {
+    html += `<button class="primary" data-act="apply">投递该岗位</button>`;
+  } else {
+    html += `<button disabled>${esc(statusText(p.status))}</button>`;
+  }
+  // 每个 tab 常显：把该岗位切回「未投递（待投递）」，用于重投
+  html += `<button data-act="to-pending" title="把该岗位标记为未投递，恢复可重新投递">标记为未投递</button>`;
+  html += `</div>`;
+  pane.innerHTML = html;
+  const b = pane.querySelector('[data-act="apply"]');
+  if (b) b.onclick = () => applyOne(p.id, p.title);
+  const fb = pane.querySelector('[data-act="focus"]');
+  if (fb) fb.onclick = () => focusWindow(p.id, p.title);
+  const hb = pane.querySelector('[data-act="human-done"]');
+  if (hb) hb.onclick = () => humanDone(p.id, p.title);
+  const tpb = pane.querySelector('[data-act="to-pending"]');
+  if (tpb) tpb.onclick = () => markPending(p.id, p.title);
+  return pane;
+}
+
+// 整栏状态：任一在投递 → 投递中；全已登录 → 已登录；有等人工 → 需人工验证
+function companyStatus(ps) {
+  if (ps.some((p) => p.status === "待人工提交")) return "待人工提交";
+  if (ps.some((p) => p.status === "需人工验证")) return "需人工验证";
+  if (ps.some((p) => p.status === "投递中")) return "投递中";
+  if (ps.every((p) => isDone(p.status))) return "已投递";
+  if (ps.some((p) => p.status === "投递失败")) return "投递失败";
+  if (ps.some((p) => isDone(p.status))) return "投递中";
+  return "pending";
+}
+
+/* ---------------------- 页内确认框 / 轻提示 ---------------------- */
+// 原生 confirm 在部分宿主里会「弹窗在、点确定没反应」（内嵌 WebView 不派发按钮事件，
+// 或被勾过「阻止此页面再创建对话框」后静默返回 false）。破坏性操作不能悬空在那里，
+// 所以确认框由页面自己渲染：按钮一定可点，失败原因就地显示，不关窗可重试。
+let ASK_RESOLVE = null;
+function ask(opts) {
+  opts = opts || {};
+  return new Promise((resolve) => {
+    $("ask-title").textContent = opts.title || "确认操作";
+    $("ask-desc").textContent = opts.desc || "";
+    $("ask-err").style.display = "none";
+    $("ask-err").textContent = "";
+    $("ask-ok").textContent = opts.okText || "确定";
+    $("ask-ok").className = opts.danger ? "no" : "primary";
+    $("ask-ok").disabled = false;
+    $("ask-ok").dataset.label = $("ask-ok").textContent;
+    $("ask-cancel").disabled = false;
+    ASK_RESOLVE = resolve;
+    $("askModal").classList.add("on");
+    setTimeout(() => { try { $("ask-ok").focus(); } catch (e) {} }, 0);
+  });
+}
+// 点「确定」只表示**同意**：窗口先不关，等调用方把请求做完。
+// 成功 → askClose(true) 关窗；失败 → askError() 就地显示原因、按钮恢复可点，可重试。
+function askSubmit() {
+  const ok = $("ask-ok");
+  if (ok.disabled) return;
+  ok.disabled = true;                 // 防连点重复提交
+  const r = ASK_RESOLVE; ASK_RESOLVE = null;
+  if (r) r(true);
+  else askClose(true);
+}
+function askClose(val) {
+  const box = $("askModal");
+  if (!box.classList.contains("on")) return;
+  if (!val && $("ask-ok").disabled) return;   // 处理中不许用「取消 / Esc / 点遮罩」跑掉
+  box.classList.remove("on");
+  const r = ASK_RESOLVE; ASK_RESOLVE = null;
+  if (r) r(!!val);
+}
+function askBusy(busy, text) {
+  const ok = $("ask-ok"), no = $("ask-cancel");
+  if (busy) {
+    ok.textContent = text || "处理中…";
+    ok.disabled = true; no.disabled = true;
+  } else {
+    ok.textContent = ok.dataset.label || "确定";
+    ok.disabled = false; no.disabled = false;
+  }
+}
+function askError(msg) {
+  const e = $("ask-err");
+  e.textContent = msg;
+  e.style.display = "block";
+  askBusy(false);
+}
+document.addEventListener("keydown", (e) => {
+  if (!$("askModal").classList.contains("on")) return;
+  if (e.key === "Escape") { e.preventDefault(); askClose(false); return; }
+  const tag = (e.target && e.target.tagName) || "";
+  if (e.key === "Enter" && tag !== "TEXTAREA" && tag !== "BUTTON") {
+    e.preventDefault();
+    askSubmit();
+  }
+});
+$("askModal").addEventListener("click", (e) => { if (e.target === $("askModal")) askClose(false); });
+
+function toast(msg, action, opts) {
+  opts = opts || {};
+  const el = document.createElement("div");
+  el.className = "toast" + (opts.err ? " err" : "");
+  const s = document.createElement("span");
+  s.textContent = msg;
+  el.appendChild(s);
+  if (action && action.label) {
+    const b = document.createElement("button");
+    b.textContent = action.label;
+    b.onclick = () => { el.remove(); try { action.run(); } catch (err) {} };
+    el.appendChild(b);
+  }
+  $("toastWrap").appendChild(el);
+  setTimeout(() => el.remove(), opts.ms || 6000);
+  return el;
+}
+
+/* ------------------------------- 取消（移除） ------------------------------- */
+// 「取消」是**破坏性动作**，绝不能静默失败：后端拒收（缺 id / 参数不对）时
+// 前端必须把原因报出来，否则用户看到的就是「点了确认却没反应」。
+async function hideRequest(body) {
+  try {
+    const r = await fetch("/api/hide", { method: "POST",
+      headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const d = await r.json();
+    if (!d || typeof d !== "object") return { ok: false, error: "返回不是 JSON（HTTP " + r.status + "）" };
+    return d;
+  } catch (e) { return { ok: false, error: "网络请求失败：" + e.message }; }
+}
+// 取消成功后**立即**把节点摘掉：不依赖下一次轮询，GET 慢/失败也不会「看着没反应」
+function dropCompanyNode(company) {
+  const job = Array.prototype.find.call(
+    document.querySelectorAll("#pre .job"), (e) => e.dataset.company === company);
+  if (job) job.remove();
+  if (!document.querySelector("#pre .job")) $("pre-empty").style.display = "block";
+}
+function dropPositionNode(id) {
+  const tb = Array.prototype.find.call(
+    document.querySelectorAll("#pre .tb"), (e) => e.dataset.pid === id);
+  if (!tb) return;
+  const job = tb.closest(".job");
+  const wasOn = tb.classList.contains("on");
+  tb.remove();
+  if (!job) return;
+  const left = job.querySelectorAll(".tb");
+  if (!left.length) { job.remove(); if (!document.querySelector("#pre .job")) $("pre-empty").style.display = "block"; return; }
+  if (wasOn) left[0].click();     // 选中态回落到第一个 tab
+}
+async function cancelPosition(id, title) {
+  const ok = await ask({
+    title: "取消该岗位",
+    desc: `不投递该岗位并移除？\n\n${title}\n\n（之后可点顶部「恢复已取消」还原）`,
+    okText: "确定移除", danger: true,
+  });
+  if (!ok) return;
+  askBusy(true, "正在取消…");
+  const d = await hideRequest({ id });
+  if (!d.ok) { askError("取消失败：" + (d.error || "请求失败") + "（可再点一次「确定移除」重试）"); return; }
+  askClose(true);
+  dropPositionNode(id);
+  toast("已取消岗位：" + title);
+  LAST_SIG = ""; await loadColumns();
+}
+async function cancelCompany(company, n) {
+  const ok = await ask({
+    title: "取消整栏",
+    desc: `不投递「${company}」并移除整栏（${n} 个岗位）？\n\n（之后可点顶部「恢复已取消」还原）`,
+    okText: "确定移除", danger: true,
+  });
+  if (!ok) return;
+  askBusy(true, "正在取消…");
+  const d = await hideRequest({ company });
+  if (!d.ok) { askError("取消失败：" + (d.error || "请求失败") + "（可再点一次「确定移除」重试）"); return; }
+  askClose(true);
+  dropCompanyNode(company);
+  toast(`已取消「${company}」整栏（${n} 个岗位）`);
+  LAST_SIG = ""; await loadColumns();
+}
+async function unhideAll() {
+  const h = HIDDEN_N || { positions: 0, companies: 0 };
+  if (!h.positions && !h.companies) { toast("当前没有已取消的记录"); return; }
+  const ok = await ask({
+    title: "恢复已取消",
+    desc: `把 ${h.companies} 家公司 / ${h.positions} 个岗位重新放回看板？\n\n`
+        + `恢复后 6 秒内可点提示条上的「撤销」退回。`,
+    okText: "恢复",
+  });
+  if (!ok) return;
+  askBusy(true, "正在恢复…");
+  let d = {};
+  try { d = await (await fetch("/api/unhide", { method: "POST" })).json(); }
+  catch (e) { d = { ok: false, error: e.message }; }
+  if (!d || !d.ok) { askError("恢复失败：" + ((d && d.error) || "请求失败")); return; }
+  askClose(true);
+  LAST_SIG = ""; await loadColumns();
+  toast(`已恢复 ${d.restored_companies || 0} 家公司 / ${d.restored_positions || 0} 个岗位`,
+        { label: "撤销", run: undoUnhide });
+}
+async function undoUnhide() {
+  let d = {};
+  try { d = await (await fetch("/api/unhide/undo", { method: "POST" })).json(); }
+  catch (e) { d = { ok: false, error: e.message }; }
+  if (!d || !d.ok) { toast("撤销失败：" + ((d && d.error) || "请求失败"), null, { err: true }); return; }
+  LAST_SIG = ""; await loadColumns();
+  toast("已撤销，取消记录已恢复");
+}
+async function resetAll() {
+  if (!confirm("复位所有已投递内容？\n\n所有岗位状态将清回「待投递」（已投递/已登录/待人工提交/需人工验证/投递失败 都清掉），" +
+               "便于整轮重投。\n不影响「取消」选择与扫描缓存。")) return;
+  const r = await fetch("/api/reset-all", { method: "POST" });
+  const d = await r.json();
+  if (!d.ok) { alert("复位失败：" + (d.error || "")); return; }
+  alert(`已复位：清掉 ${d.cleared_status} 条岗位状态、${d.cleared_pos_state} 条岗位状态表、` +
+        `复位 ${d.custom_reset} 条自定义预选。`);
+  LAST_SIG = ""; await loadColumns();
+}
+
+/* ------------------------------- 投递 ------------------------------- */
+async function applyOne(id, title) {
+  const tail = pauseSubmit()
+    ? `→ 登录成功后自动打开投递表单 → 自动填写投递信息（含上传简历）\n` +
+      `→ **停在提交前**：窗口保持打开、**不设超时**（不会因为等你而自动关闭），请你核对后手动点「提交」。\n`
+    : `→ 登录成功后自动打开投递表单 → 自动填写投递信息（含上传简历）→ 自动提交。\n`;
+  if (!confirm(`投递：${title}\n\n将打开【可见浏览器】，自动走完：\n` +
+               `选职位 → 点投递 → 填手机号 → 勾选协议 → 获取验证码 → 自动填验证码 → 自动登录\n` +
+               tail +
+               `遇到人机验证先自动过（CV 滑块识别 → AI 视觉），失败才转人工。继续？`)) return;
+  const r = await fetch(`/api/preselect/${id}/apply`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ mode: MODE, pause_before_submit: pauseSubmit() }),
+  });
+  const d = await r.json();
+  if (!d.ok) { alert("投递启动失败：" + (d.error || "")); return; }
+  LAST_SIG = ""; loadColumns();
+}
+
+async function cancelApplyAll() {
+  if (!confirm(`停止当前投递队列？
+
+· 不再派发新岗位
+· 正在投递的那个会在下一个检查点中断（等待验证码 / 填表 / 提交前）
+· 被取消的岗位回到「待投递」，可随时重新投递`)) return;
+  const t = $("btn-cancelapply");
+  if (t) { t.disabled = true; t.textContent = "正在取消…"; }
+  let d = {};
+  try { d = await (await fetch("/api/apply-all/cancel", { method: "POST" })).json(); }
+  catch (e) { d = {}; }
+  if (!d || !d.ok) {
+    alert("取消失败：" + ((d && d.error) || "请求失败"));
+    if (t) { t.disabled = false; t.textContent = "取消投递"; }
+    return;
+  }
+  await loadColumns();      // 立即回读一次，把按钮切到「正在取消…」
+  setTimeout(loadColumns, 2500);
+}
+
+async function applyAll() {
+  let d;
+  try { d = await (await fetch("/api/columns?mode=" + encodeURIComponent(MODE))).json(); }
+  catch (e) { alert("读取看板失败"); return; }
+  const ids = [];
+  for (const c of d.columns || []) for (const p of c.positions) if (p.ready) ids.push(p.id);
+  if (!ids.length) { alert("当前预选栏内没有可投递的岗位。"); return; }
+  const nCo = (d.columns || []).length;
+  if (!confirm(`一键投递：对当前预选栏内 ${ids.length} 个岗位（${nCo} 家公司）逐个自动投递。\n\n` +
+               `单窗口：同一时刻只开一个浏览器标签页，投完一个才开下一个；遇到人机验证会先自动过，失败才提示人工。\n` +
+               `登录后会继续自动填投递信息，**填完停在提交前**等你在窗口里核对并点「提交」；\n` +
+               `你点提交后流程自动继续下一个岗位（不点就一直等，不设超时）。\n` +
+               `已投递/正在投递的岗位会自动跳过。继续？`)) return;
+  const r = await fetch("/api/apply-all", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ids, mode: MODE, concurrency: 1 }),
+  });
+  const j = await r.json();
+  if (!j.ok) { alert("启动失败：" + (j.error || "")); return; }
+  LAST_SIG = ""; loadColumns();
+}
+
+/* ------------------------------- 扫描 ------------------------------- */
+async function doScan() {
+  const r = await fetch("/api/scan", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ limit: 40 }),
+  });
+  const d = await r.json();
+  if (!d.ok) { alert("扫描启动失败：" + (d.error || "")); return; }
+  if (!d.started) { alert(d.message || "没有待扫描的投递链接（缓存已覆盖）"); return; }
+  LAST_SIG = ""; loadColumns();
+}
+async function stopScan() { await fetch("/api/scan/stop", { method: "POST" }); }
+
+/* ------------------------------- 人工介入：进入窗口 / 确认已投递 ------------------------------- */
+async function focusWindow(id, title) {
+  let d = {};
+  try {
+    d = await (await fetch(`/api/preselect/${encodeURIComponent(id)}/focus`, { method: "POST" })).json();
+  } catch (e) { d = {}; }
+  if (!d || !d.ok) { alert("置前失败：" + ((d && d.error) || "请求失败")); return; }
+  // 后端只「请求置前」——窗口是否仍开着只有投递线程知道；已关闭时置前无效。
+  alert(`已请求把「${title}」的浏览器窗口置前。\n\n若窗口已超时关闭，此操作无效 —— 可点「投递该岗位」重新打开窗口。`);
+}
+async function humanDone(id, title) {
+  if (!confirm(`确认「${title}」已经投递完成？\n\n将登记为「已投递」（终态，不会再重复投递）。`)) return;
+  let d = {};
+  try {
+    d = await (await fetch(`/api/preselect/${encodeURIComponent(id)}/human-done`, { method: "POST" })).json();
+  } catch (e) { d = {}; }
+  if (!d || !d.ok) { alert("登记失败：" + ((d && d.error) || "请求失败")); return; }
+  LAST_SIG = ""; await loadColumns();
+}
+async function markPending(id, title) {
+  if (!confirm(`把「${title}」标记为未投递？\n\n状态将回到「待投递」，清掉旧的投递备注，之后可以重新投递。`)) return;
+  let d = {};
+  try {
+    d = await (await fetch(`/api/preselect/${encodeURIComponent(id)}/mark-pending`, { method: "POST" })).json();
+  } catch (e) { d = {}; }
+  if (!d || !d.ok) { alert("标记失败：" + ((d && d.error) || "请求失败")); return; }
+  LAST_SIG = ""; await loadColumns();
+}
+
+/* ------------------- 以调试模式启动 Edge（CDP 接管独立实例） ------------------- */
+/* ①「复制主 Edge 的 cookie 快照」不可行：Edge 的 cookie 是 v20(App-Bound Encryption)，
+     副本里一条都解不开（实测 2920 条 → 0 条）。
+   ②「用主 Edge 的默认资料目录 + 调试端口」也不可行：Chromium ≥136 的安全策略会
+     **静默忽略**调试端口（实测 45s 端口始终不就绪）。
+   所以这里启动的是一个**独立** Edge 实例（专用资料目录 + 调试端口）：
+   你在其中登录一次，投递时用 CDP 接管它、复用该登录态。与日常 Edge 互不影响。 */
+async function edgeCdp() {
+  let st = null;
+  try { st = await (await fetch("/api/edge-cdp/status")).json(); } catch (e) { st = null; }
+  if (st && st.cdp_ready) {
+    alert(`调试实例已经在运行（${st.browser || "?"}）。
+
+投递会直接接管它，无需再启动。`);
+    return;
+  }
+  if (st && st.profile_dir_is_default) {
+    alert(`CDP 资料目录被配置成了 Edge 的默认目录 —— Chromium 会静默忽略调试端口。
+
+请把 RESUME_CDP_UDD 改成非默认目录（或清空该变量）后重启后端。`);
+    return;
+  }
+  return doEdgeCdp(false);
+}
+async function doEdgeCdp(closeEdge) {
+  const t = $("btn-edgecdp");
+  if (t) { t.disabled = true; t.textContent = "启动中…"; }
+  let d = {};
+  try {
+    d = await (await fetch("/api/edge-cdp/launch", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ close_edge: !!closeEdge }) })).json();
+  } catch (e) { d = {}; }
+  if (t) { t.disabled = false; t.textContent = "启动 Edge（继承登录态）"; }
+  if (!d || !d.ok) { alert("启动失败：" + ((d && d.error) || "请求失败")); return; }
+  alert(`调试实例已启动（${d.browser || "?"}）。
+
+调试端点：${d.endpoint}
+资料目录：${d.profile_dir}
+
+这是一个**独立**的 Edge 窗口，与你的日常 Edge 互不影响。
+请在这个窗口里登录你要投递的站点（一次即可）—— 之后所有投递都会接管它并复用登录态；
+验证码 / 滑块也能在这个可见窗口里人工接管。`);
+}
+
+/* ------------------------------- 短信 ------------------------------- */
+async function loadSms() {
+  let d;
+  try { d = await (await fetch("/api/sms")).json(); } catch (e) { return; }
+  const box = $("sms");
+  const keys = Object.keys(d);
+  if (!keys.length) {
+    box.className = "hint sms-box";
+    box.textContent = "等待手机转发短信到 /sms …";
+    $("sms-sum").textContent = "";
+    return;
+  }
+  box.className = "sms-box";
+  $("sms-sum").textContent = `${keys.length} 个号码`;
+  box.innerHTML = keys.slice(-12).reverse().map((k) => {
+    const v = d[k] || {};
+    return `<div class="sms-row"><b>${esc(k)}</b>　验证码 <span class="code">${esc(v.code || "—")}</span>` +
+      `<br>${esc(v.text || "")}<br><span class="hint">${esc(v.received || "")}</span></div>`;
+  }).join("");
+}
+
+async function reloadAll() {
+  await fetch("/api/reload", { method: "POST" });
+  LAST_SIG = "";
+  await loadColumns(); await loadSms();
+}
+
+/* ------------------------------- 个人信息窗口 ------------------------------- */
+let PROFILE_DATA = {};
+async function openProfile() {
+  try { PROFILE_DATA = await (await fetch("/api/profile")).json(); }
+  catch (e) { PROFILE_DATA = {}; }
+  if (!PROFILE_DATA || typeof PROFILE_DATA !== "object") PROFILE_DATA = {};
+  const get = (p, d="") => {
+    const v = p.split(".").reduce((o, k) => (o == null ? o : o[k]), PROFILE_DATA);
+    return v == null ? d : v;
+  };
+  const set = (id, v) => { const el = $(id); if (el) el.value = (v == null ? "" : v); };
+  set("p-name", get("name"));
+  set("p-gender", get("gender"));
+  set("p-phone", get("phone"));
+  set("p-email", get("email"));
+  set("p-birth", get("birth"));
+  set("p-location", get("location"));
+  set("p-intended", get("intended_city"));
+  set("p-native", get("native_place"));
+  set("p-current-addr", get("current_addr"));
+  set("p-school-addr", get("school_addr"));
+  set("p-idcard", get("id_card"));
+  $("p-adjust").checked = !!get("accept_adjust");
+  set("p-edu-school", get("education.school"));
+  set("p-edu-degree", get("education.degree"));
+  set("p-edu-major", get("education.major"));
+  set("p-edu-grad", get("education.grad_year"));
+  set("p-edu-period", get("education.period"));
+  set("p-edu-gpa", get("education.gpa"));
+  set("p-resume", get("resume_pdf"));
+  set("p-self", get("self_intro"));
+  set("p-experiences", JSON.stringify(get("experiences", []), null, 2));
+  set("p-projects", JSON.stringify(get("projects", []), null, 2));
+  set("p-skills", JSON.stringify(get("skills", []), null, 2));
+  set("p-awards", JSON.stringify(get("awards", []), null, 2));
+  $("profile-msg").textContent = "";
+  $("profileModal").classList.add("on");
+}
+function closeProfile() { $("profileModal").classList.remove("on"); }
+
+/* ------------------------------- 匹配条件窗口 ------------------------------- */
+let MATCH_DATA = { keywords: [], cities: [] };
+async function openMatch() {
+  try { const d = await (await fetch("/api/match-rules")).json(); MATCH_DATA = d; }
+  catch (e) { MATCH_DATA = { keywords: [], cities: [] }; }
+  if (!MATCH_DATA || typeof MATCH_DATA !== "object") MATCH_DATA = {};
+  $("m-keywords").value = (MATCH_DATA.keywords || []).join("\n");
+  $("m-cities").value = (MATCH_DATA.cities || []).join("\n");
+  $("match-msg").textContent = "";
+  $("matchModal").classList.add("on");
+}
+function closeMatch() { $("matchModal").classList.remove("on"); }
+function _splitLines(id) {
+  return $(id).value.split(/[\n,，]+/).map((s) => s.trim()).filter(Boolean);
+}
+async function saveMatch() {
+  const payload = { keywords: _splitLines("m-keywords"), cities: _splitLines("m-cities") };
+  const r = await fetch("/api/match-rules", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  let d; try { d = await r.json(); } catch (e) { d = {}; }
+  if (!d.ok) { $("match-msg").textContent = "保存失败：" + (d.error || r.status); return; }
+  $("match-msg").textContent = "已保存 ✓";
+  setTimeout(() => { closeMatch(); loadColumns(); }, 600);
+}
+function collectProfile() {
+  const val = (id) => ($(id).value || "").trim();
+  const setp = (p, v) => {
+    const ks = p.split("."); let o = PROFILE_DATA;
+    for (let i = 0; i < ks.length - 1; i++) { o[ks[i]] = (o[ks[i]] == null ? {} : o[ks[i]]); o = o[ks[i]]; }
+    o[ks[ks.length - 1]] = v;
+  };
+  setp("name", val("p-name"));
+  setp("gender", val("p-gender"));
+  setp("phone", val("p-phone"));
+  setp("email", val("p-email"));
+  setp("birth", val("p-birth"));
+  setp("location", val("p-location"));
+  setp("intended_city", val("p-intended"));
+  setp("native_place", val("p-native"));
+  setp("current_addr", val("p-current-addr"));
+  setp("school_addr", val("p-school-addr"));
+  setp("id_card", val("p-idcard"));
+  setp("accept_adjust", $("p-adjust").checked);
+  setp("education.school", val("p-edu-school"));
+  setp("education.degree", val("p-edu-degree"));
+  setp("education.major", val("p-edu-major"));
+  setp("education.period", val("p-edu-period"));
+  setp("education.gpa", val("p-edu-gpa"));
+  const gy = val("p-edu-grad");
+  setp("education.grad_year", gy && /^\d+$/.test(gy) ? parseInt(gy, 10) : gy);
+  setp("resume_pdf", val("p-resume"));
+  setp("self_intro", val("p-self"));
+  // JSON 数组（工作经历/项目/技能/奖项）：逐字段独立解析，坏哪个只跳过哪个并提示。
+  const json_paths = ["experiences", "projects", "skills", "awards"];
+  const id_of = (p) => "p-" + p;
+  const errs = [];
+  for (const p of json_paths) {
+    const raw = val(id_of(p));
+    if (!raw) { setp(p, []); continue; }
+    try { setp(p, JSON.parse(raw)); }
+    catch (e) { errs.push(p + "：" + e.message); }
+  }
+  return errs;
+}
+
+async function saveProfile() {
+  const errs = collectProfile();
+  const r = await fetch("/api/profile", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(PROFILE_DATA),
+  });
+  let d; try { d = await r.json(); } catch (e) { d = {}; }
+  if (!d.ok) { $("profile-msg").textContent = "保存失败：" + (d.error || r.status); return; }
+  $("profile-msg").textContent = errs.length
+    ? "已保存（" + errs.length + " 个 JSON 数组格式错误、未更新：" + errs.join("；") + "）"
+    : "已保存 ✓";
+  if (errs.length) setTimeout(closeProfile, 2600);
+  else setTimeout(closeProfile, 700);
+}
+
+/* ------------------------------- 简历解析并回写 JSON ------------------------------- */
+async function parseResume() {
+  const fileInput = $("p-resume-file");
+  const msg = $("parse-msg");
+  const file = fileInput.files && fileInput.files[0];
+  if (!file) { msg.style.color = "#991b1b"; msg.textContent = "请先选择一份 PDF 简历"; return; }
+  if (!window.pdfjsLib) { msg.style.color = "#991b1b"; msg.textContent = "PDF.js 未加载，请刷新页面"; return; }
+  msg.style.color = "#6b7280"; msg.textContent = "正在读取 PDF…";
+  try {
+    const buf = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+    let text = "";
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      text += content.items.map(it => it.str || "").join(" ") + "\n";
+    }
+    if (!text.trim()) { msg.style.color = "#991b1b"; msg.textContent = "PDF 未提取到文本（可能是扫描件/图片型）"; return; }
+    msg.textContent = "已读取 " + text.length + " 字，正在调用 LLM 抽取…";
+    const r = await fetch("/api/parse-resume", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+    });
+    const d = await r.json();
+    if (!d.ok) {
+      msg.style.color = "#991b1b";
+      msg.textContent = "抽取失败：" + (d.error || r.status) + (d.need_config ? "（请配置 LLM Key: snova）" : "");
+      return;
+    }
+    // 先把窗口里其它字段也同步进 PROFILE_DATA，再覆盖这 4 个解析字段，避免覆盖未保存的修改
+    collectProfile();
+    PROFILE_DATA.experiences = d.experiences;
+    PROFILE_DATA.projects = d.projects;
+    PROFILE_DATA.skills = d.skills;
+    PROFILE_DATA.awards = d.awards;
+    $("p-experiences").value = JSON.stringify(d.experiences, null, 2);
+    $("p-projects").value = JSON.stringify(d.projects, null, 2);
+    $("p-skills").value = JSON.stringify(d.skills, null, 2);
+    $("p-awards").value = JSON.stringify(d.awards, null, 2);
+    try {
+      const sr = await fetch("/api/profile", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(PROFILE_DATA) });
+      const sj = await sr.json().catch(() => ({}));
+      if (sj.ok) { msg.style.color = "#059669"; msg.textContent = "已回填并写回 profile.json ✓（" + (d.used_model || "") + "）"; }
+      else { msg.style.color = "#92400e"; msg.textContent = "已回填文本框，写回失败：" + (sj.error || sr.status) + "（可点「保存」重试）"; }
+    } catch (e2) {
+      msg.style.color = "#92400e"; msg.textContent = "已回填文本框，写回异常：" + e2.message + "（可点「保存」重试）";
+    }
+  } catch (e) {
+    msg.style.color = "#991b1b"; msg.textContent = "解析出错：" + e.message;
+  }
+}
+
+/* ------------------------------- 短信清除 ------------------------------- */
+async function clearSms() {
+  if (!confirm("清空短信监控框？\n\n只清掉当前展示的短信（手机已转发内容），保留 /api/sms/history 历史与拒收台账，便于回看。")) return;
+  try {
+    const r = await fetch("/api/sms/clear", { method: "POST" });
+    const d = await r.json();
+    if (!d.ok) { alert("清除失败：" + (d.error || "")); return; }
+  } catch (e) { alert("清除请求失败：" + e.message); return; }
+  await loadSms();
+}
+
+/* ------------------------------- 启动 ------------------------------- */
+$("chk-pause").checked = pauseSubmit();   // 回填「停在提交前」开关
+loadColumns();
+loadSms();
+loadCaptchaStatus();
+setInterval(loadColumns, 3000);   // 投递/扫描进度实时刷新
+setInterval(loadSms, 3000);
+
+async function loadCaptchaStatus() {
+  try {
+    const d = await (await fetch("/api/captcha/status")).json();
+    const llm = d.llm || {};
+    const cv = d.cv_available
+      ? `<span class="ok">CV 滑块 v${esc(d.cv_version || "?")}</span>`
+      : `<span class="no">CV 不可用</span>`;
+    const ai = llm.configured
+      ? `<span class="ok">AI 视觉 ${esc((llm.models || []).join("→"))}</span>`
+      : `<span class="warn">AI 视觉未配置</span>`;
+    $("capstats").innerHTML = cv + ai +
+      `<span>人机验证：先自动过，失败才转人工</span>`;
+  } catch (e) {
+    $("capstats").innerHTML = `<span class="warn">验证码通道状态获取失败</span>`;
+  }
+}
+</script>
+</body>
+</html>

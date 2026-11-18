@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- AppCompatActivity 必须挂在 Theme.AppCompat 派生主题下，否则运行时崩溃 -->
+    <style name="Theme.ResumeBot" parent="Theme.AppCompat.Light.DarkActionBar" />
+</resources>

@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="断点1 · 短信转发（持续轮询版）"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tv_perm"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:textSize="13sp"
+            android:text="权限状态：读取中…" />
+
+        <TextView
+            android:id="@+id/tv_state"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:textSize="13sp"
+            android:text="服务状态：读取中…" />
+
+        <Button
+            android:id="@+id/btn_perm"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="① 授予短信 + 通知权限" />
+
+        <Button
+            android:id="@+id/btn_battery"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="② 加入电池优化白名单（防杀后台）" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:textSize="13sp"
+            android:text="后端上报地址（POST JSON）：" />
+
+        <EditText
+            android:id="@+id/et_url"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="http://192.168.1.100:8000/sms"
+            android:inputType="textUri"
+            android:textSize="14sp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textSize="13sp"
+            android:text="轮询间隔（秒，建议 3~10）：" />
+
+        <EditText
+            android:id="@+id/et_interval"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="5"
+            android:inputType="number"
+            android:textSize="14sp" />
+
+        <Button
+            android:id="@+id/btn_save_start"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="③ 保存并启动轮询" />
+
+        <Button
+            android:id="@+id/btn_stop"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="停止轮询" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="验证工具（可选）：" />
+
+        <Button
+            android:id="@+id/btn_test"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="发送测试短信（验证链路通不通）" />
+
+        <Button
+            android:id="@+id/btn_backfill"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="补发收件箱最近 5 条短信" />
+
+        <Button
+            android:id="@+id/btn_flush"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="立即冲刷待发队列" />
+
+        <Button
+            android:id="@+id/btn_notify"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="开启通知使用权（可选第二路径）" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="运行日志（最新在上）："
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tv_log"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:background="#11000000"
+            android:padding="8dp"
+            android:textIsSelectable="true"
+            android:textSize="11sp"
+            android:typeface="monospace"
+            android:text="（暂无日志）" />
+
+        <Button
+            android:id="@+id/btn_clear"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="清空日志与计数" />
+
+    </LinearLayout>
+</ScrollView>

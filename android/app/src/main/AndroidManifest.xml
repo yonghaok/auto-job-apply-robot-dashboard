@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- 联网转发到 PC -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- 主路径：轮询短信收件箱需要读短信权限 -->
+    <uses-permission android:name="android.permission.READ_SMS" />
+
+    <!-- 前台服务：常驻轮询。specialUse 子类型不受 dataSync 在 Android 15+ 的 6 小时限制 -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <!-- Android 13+ 前台服务通知需要该运行时权限（拒绝也能跑，只是通知不显示） -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- 开机自启 / 安装更新后自拉起 -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- 引导用户把本 App 加入电池优化白名单，避免后台被冻结 -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+
+    <application
+        android:allowBackup="true"
+        android:label="简历机器人·短信转发"
+        android:supportsRtl="true"
+        android:usesCleartextTraffic="true"
+        android:theme="@style/Theme.ResumeBot">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- ============ 主路径：持续轮询 content://sms/inbox ============
+             不依赖通知使用权，也不依赖成为默认短信应用，只需 READ_SMS。
+             foregroundServiceType=specialUse: 个人短信转发工具无法归入
+             dataSync/camera/media 等标准类别；且 dataSync 在 Android 15+ 有
+             每 6 小时强制回调 onTimeout 的限制，会导致长时间不再轮询。 -->
+        <service
+            android:name=".SmsPollService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="personal_sms_forwarder" />
+        </service>
+
+        <!-- 开机 / 应用更新后自动拉起轮询服务 -->
+        <receiver
+            android:name=".BootReceiver"
+            android:exported="true"
+            android:enabled="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+            </intent-filter>
+        </receiver>
+
+        <!-- ============ 第二路径（并行保留）：通知使用权 ============
+             用户若顺手开了通知使用权，则通知一到即可近乎实时转发，
+             比 5 秒轮询更快；两条路径共用同一个待发队列，不会重复上报。 -->
+        <service
+            android:name=".SmsNotificationListener"
+            android:label="短信验证码转发"
+            android:exported="true"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
+            android:settingsActivity="com.example.resumebot.MainActivity">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.service.notification.notification_listener_service"
+                android:resource="@xml/notification_listener_info" />
+        </service>
+
+        <!-- 旧版 SMS_RECEIVED 广播接收器（仅 Android 9 / API 28 及以下有效）。
+             默认关闭；现代设备请用上面的轮询服务。 -->
+        <receiver
+            android:name=".SmsReceiver"
+            android:exported="true"
+            android:enabled="false"
+            android:permission="android.permission.BROADCAST_SMS">
+            <intent-filter android:priority="999">
+                <action android:name="android.provider.Telephony.SMS_RECEIVED" />
+            </intent-filter>
+        </receiver>
+
+    </application>
+</manifest>

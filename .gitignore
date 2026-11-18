@@ -1,0 +1,50 @@
+# ---- 个人信息与运行时数据（绝不入库）----
+backend/profile.json
+backend/profile.json.*
+backend/state.json
+backend/state.json.*
+backend/sms.json
+backend/sms_hist.json
+backend/sms_rejected.jsonl
+backend/access.log
+backend/access.log.*
+
+# 浏览器会话：含登录态 Cookie
+backend/browser_profiles/
+
+# 职位表：含真实求职意向
+岗位总表.xlsx
+*_筛选.xlsx
+*.xlsx
+!android/dist/*.apk
+
+# ---- 本地环境 ----
+android/local.properties
+android/build.log
+android/build2.log
+android/build3.log
+android/.gradle/
+android/gradle-dist/
+android/app/build/
+__pycache__/
+*.py[cod]
+
+# ---- 备份与临时产物 ----
+*.bak
+*.bak-*
+*.bak.*
+*.tmp
+*.tmp__
+
+# ---- 编辑器 / 系统 ----
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# ---- 工具元数据 ----
+.wbapp_*
+.workbuddy/
+
+# ---- 截图与媒体（含个人投递进度）----
+frontend/board_preview.png
