@@ -1,7 +1,8 @@
-# job-apply-assistant · 一键自动填简历机器人
+# resume-bot · 一键自动填简历机器人
 
-> 仓库名 `job-apply-assistant`，项目内部代号 `resume-bot`（模块名、目录名沿用）。
-> 下文所有路径均指仓库根目录。
+> GitHub 仓库：<https://github.com/yonghaok/--->
+> 仓库名与内部代号 `resume-bot` 不同名，属正常；下文所有路径均指仓库根目录。
+> 克隆时建议显式指定目录名：`git clone https://github.com/yonghaok/---.git resume-bot`
 
 把求职网站的申请表单**自动填到「提交前」**，由你核对后自己点提交。
 
@@ -43,7 +44,7 @@
 ## 2. 架构
 
 ```
-job-apply-assistant/
+resume-bot/
 ├── backend/                 Python 后端（零 Web 框架，标准库 http.server）
 │   ├── server.py            路由 / 看板 API / 任务队列 / 看门狗
 │   ├── filler.py            表单采集与填写引擎（Playwright，确定性匹配，不调用 LLM）
@@ -79,13 +80,22 @@ job-apply-assistant/
 
 ## 3. 快速开始
 
-### 3.1 环境要求
+### 3.1 获取代码
+
+```bash
+git clone https://github.com/yonghaok/---.git resume-bot
+cd resume-bot
+```
+
+也可以直接在仓库页面点 `Code → Download ZIP`（不装 git 也能用），解压后目录名建议改为 `resume-bot`。
+
+### 3.2 环境要求
 
 - Windows 10/11（主要验证平台；macOS/Linux 需自行调整路径）
 - Python 3.9+
 - 本机已安装 **Chrome**（默认用 `channel="chrome"`；可用 `RESUME_BROWSER_CHANNEL=edge` 切 Edge）
 
-### 3.2 安装依赖
+### 3.3 安装依赖
 
 ```bash
 python -m pip install openpyxl playwright
@@ -93,7 +103,7 @@ python -m pip install openpyxl playwright
 python -m playwright install chromium
 ```
 
-### 3.3 准备岗位表
+### 3.4 准备岗位表
 
 把职位信息整理成 `岗位总表.xlsx`，放在**仓库根目录**（与 `backend/`、`frontend/` 同级）。
 
@@ -110,10 +120,10 @@ python -m playwright install chromium
 列名不必完全一致 —— 安装 `skills/job-sheet-adapter` 后，可让 AI agent 自动把任意格式的
 Excel 转成这个标准结构并按条件筛选，见第 7 节。
 
-### 3.4 启动
+### 3.5 启动
 
 ```bash
-cd job-apply-assistant
+# 在仓库根目录
 python backend/server.py
 ```
 
