@@ -1,4 +1,7 @@
-# resume-bot · 一键自动填简历机器人
+# job-apply-assistant · 一键自动填简历机器人
+
+> 仓库名 `job-apply-assistant`，项目内部代号 `resume-bot`（模块名、目录名沿用）。
+> 下文所有路径均指仓库根目录。
 
 把求职网站的申请表单**自动填到「提交前」**，由你核对后自己点提交。
 
@@ -40,7 +43,7 @@
 ## 2. 架构
 
 ```
-resume-bot/
+job-apply-assistant/
 ├── backend/                 Python 后端（零 Web 框架，标准库 http.server）
 │   ├── server.py            路由 / 看板 API / 任务队列 / 看门狗
 │   ├── filler.py            表单采集与填写引擎（Playwright，确定性匹配，不调用 LLM）
@@ -92,7 +95,7 @@ python -m playwright install chromium
 
 ### 3.3 准备岗位表
 
-把职位信息整理成 `岗位总表.xlsx`，放在 **`resume-bot/` 目录下**（与 `backend/`、`frontend/` 同级）。
+把职位信息整理成 `岗位总表.xlsx`，放在**仓库根目录**（与 `backend/`、`frontend/` 同级）。
 
 至少需要这三列：
 
@@ -110,7 +113,7 @@ Excel 转成这个标准结构并按条件筛选，见第 7 节。
 ### 3.4 启动
 
 ```bash
-cd resume-bot
+cd job-apply-assistant
 python backend/server.py
 ```
 
@@ -307,7 +310,7 @@ cp -r skills/job-sheet-adapter ~/.workbuddy/skills/
 ## 8. 常见问题
 
 **Q：启动报 `FileNotFoundError: 岗位总表.xlsx`**
-把表放到 `resume-bot/岗位总表.xlsx`，或设 `RESUME_XLSX` 指向实际路径。
+把表放到仓库根目录的 `岗位总表.xlsx`，或设 `RESUME_XLSX` 指向实际路径。
 
 **Q：投递时没有弹出浏览器**
 确认本机装了 Chrome；或设 `RESUME_BROWSER_CHANNEL=edge`。
